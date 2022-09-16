@@ -1,9 +1,13 @@
 import numpy as np
 
-def signal1d_derivatives(signal, max_order):
+def signal1d_derivatives(signal, max_order, noise=False, random_state=None):
     x = np.array(signal)
     y = np.zeros((max_order+1, *x.shape))
-    y[0] = x
+    if noise:
+        xe = random_state.randn(x.size) * 0.01
+    else:
+        xe = 0
+    y[0] = x + xe
     for order in np.arange(1, max_order+1):
         y[order, :-order] = y[order-1, order:] - y[order-1, :-order]
     return y.T
