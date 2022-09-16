@@ -16,7 +16,9 @@ def signal1d_derivatives(signal, max_order, antiderivative=True, noise=False, ra
         z = np.zeros_like(x)
         for i in range(x.size):
             z[i] = z[i - 1] + x[i]
-    return np.vstack((y, z)).T
+        y = np.vstack((y, z))
+
+    return y.T
 
 def updown_generator(N, n_changepoints, random_state):
     changepoints = np.insert(np.sort(random_state.randint(0, N, n_changepoints)), [0, n_changepoints], [0, N])
