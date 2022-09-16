@@ -1,6 +1,6 @@
 import numpy as np
 
-def signal1d_derivatives(signal, max_order, noise=False, random_state=None):
+def signal1d_derivatives(signal, max_order, antiderivative=True, noise=False, random_state=None):
     x = np.array(signal)
     y = np.zeros((max_order+1, *x.shape))
     if noise:
@@ -8,9 +8,15 @@ def signal1d_derivatives(signal, max_order, noise=False, random_state=None):
     else:
         xe = 0
     y[0] = x + xe
+
     for order in np.arange(1, max_order+1):
         y[order, :-order] = y[order-1, order:] - y[order-1, :-order]
-    return y.T
+
+    if antiderivative:
+        z = np.zeros_like(x)
+        for i in range(x.size):
+            z[i] = z[i - 1] + x[i]
+    return np.vstack((y, z)).T
 
 def updown_generator(N, n_changepoints, random_state):
     changepoints = np.insert(np.sort(random_state.randint(0, N, n_changepoints)), [0, n_changepoints], [0, N])
