@@ -19,12 +19,11 @@ def ant_step(current_location, last_location, current_potential, last_potential,
         goahead = int(dp_last > 0) * 2 - 1
         new_direction = rotate(*(goahead * direction_last), rotation)
 
-    elif method == 'fliprot':
+    elif method == 'switch':
         if dp_last > 0:
             new_direction = rotate(*direction_last, rotation)
         else:
-            new_direction = -rotate(*direction_last, rotation)
-
+            new_direction = rotate(*direction_last, -rotation)
 
 
 
@@ -48,13 +47,16 @@ if __name__ == "__main__":
 
     duration = 200
     xt, yt = np.zeros(duration), np.zeros(duration)
-    degree = np.pi / 6
+    degree = np.pi / 4
     pt = np.zeros(duration)
     for t in range(duration):
         xt[t], yt[t] = x1, y1
-        p0, p1 = [landscape.pdf(xy) for xy in ([x0, y0], [x1, y1])]
+        p0, p1 = [landscape.pdf(xy) + np.random.randn() / 1000 for xy in ([x0, y0], [x1, y1])]
         #p0, p1 = y0, y1
         s, flip = ant_step([x1, y1], [x0, y0], p1, p0, rotation=degree)
+        if flip:
+            degree *= -1
+            print('change')
 
         x0, y0 = x1, y1
         x1 += s[0]
