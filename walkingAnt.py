@@ -15,6 +15,7 @@ def ant_step(current_location, last_location, current_potential, last_potential)
     dp_last = p_curr - p_last
     reverse = int(dp_last > 0) * 2 - 1
 
-    direction_curr = rotate(*(-reverse * direction_last), 30)
+    new_direction = rotate(*(-reverse * direction_last), 30)
+    direction_curr = np.array([new_direction.real, new_direction.imag])
 
-    return direction_curr.real * 0.1, direction_curr.imag * 0.1
+    return direction_curr * 0.1
