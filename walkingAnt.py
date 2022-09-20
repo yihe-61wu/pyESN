@@ -24,7 +24,7 @@ def ant_step(current_location, last_location, current_potential, last_potential,
         if dp_last > 0:
             new_direction = rotate(*direction_last, rotation)
         else:
-            new_direction = -rotate(*direction_last, -rotation)
+            new_direction = -rotate(*direction_last, -rotation) # why this negative this thing seems to make it work?
 
         direction_curr = np.array([new_direction.real, new_direction.imag]) #+ np.random.rand(2) * 0.01
 
