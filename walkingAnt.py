@@ -1,12 +1,13 @@
 import numpy as np
 
 
-def rotate(x, y, degrees):
-    vector = x + y * 1j
-    return vector * np.exp(complex(0, np.deg2rad(degrees)))
+def rotate(x, y, angle):
+    v_old = x + y * 1j
+    v_new = v_old * np.exp(complex(0, angle))
+    return np.array([v_new.real, v_new.imag])
 
 
-def ant_step(current_location, last_location, current_potential, last_potential, rotation=90, stepsize=0.1, method='fliprot'):
+def ant_step(current_location, last_location, current_potential, last_potential, rotation=90, stepsize=0.1, method='reverse'):
     xy_curr, xy_last, p_curr, p_last = [np.array(arg) for arg in (current_location, last_location, current_potential, last_potential)]
 
     dxy_last = xy_curr - xy_last
@@ -15,21 +16,21 @@ def ant_step(current_location, last_location, current_potential, last_potential,
     dp_last = p_curr - p_last
 
     if method == 'reverse':
-        reverse = int(dp_last < 0) * 2 - 1
-
-        new_direction = rotate(*(reverse * direction_last), rotation)
-        direction_curr = np.array([new_direction.real, new_direction.imag])
+        goahead = int(dp_last > 0) * 2 - 1
+        new_direction = rotate(*(goahead * direction_last), rotation)
 
     elif method == 'fliprot':
         if dp_last > 0:
             new_direction = rotate(*direction_last, rotation)
         else:
-            new_direction = -rotate(*direction_last, -rotation) # why this negative this thing seems to make it work?
-
-        direction_curr = np.array([new_direction.real, new_direction.imag]) #+ np.random.rand(2) * 0.01
+            new_direction = -rotate(*direction_last, rotation)
 
 
-    return direction_curr * stepsize, dp_last < 0
+
+
+
+
+    return new_direction * stepsize, dp_last < 0
 
 
 if __name__ == "__main__":
@@ -45,17 +46,15 @@ if __name__ == "__main__":
     init_offset = np.random.rand(2) * .2 - .1
     x1, y1 = x0 + init_offset[0], y0 + init_offset[1]
 
-    duration = 100
+    duration = 200
     xt, yt = np.zeros(duration), np.zeros(duration)
-    degree = 20
+    degree = np.pi / 6
     pt = np.zeros(duration)
     for t in range(duration):
         xt[t], yt[t] = x1, y1
         p0, p1 = [landscape.pdf(xy) for xy in ([x0, y0], [x1, y1])]
         #p0, p1 = y0, y1
-        s, flip = ant_step([x1, y1], [x0, y0], p0, p1, rotation=degree)
-        if flip:
-            degree *= -1
+        s, flip = ant_step([x1, y1], [x0, y0], p1, p0, rotation=degree)
 
         x0, y0 = x1, y1
         x1 += s[0]
