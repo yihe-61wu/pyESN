@@ -18,6 +18,10 @@ class Field():
         elif self.title == 'Gaussian1d':
             self.landscape = multivariate_normal(mean=[0, 0], cov=[[2000, 0], [0, 1]])
             self.norm_coeff = 1 / self.landscape.pdf([0, 0])
+        elif self.title == 'TwoTower':
+            self.landscape0 = multivariate_normal(mean=[1, 0], cov=[[2, -1], [1, 1]])
+            self.landscape1 = multivariate_normal(mean=[-1, -1], cov=[[1, -1], [2, 3]])
+            self.norm_coeff = 1 / (self.landscape0.pdf([1, 0]) + self.landscape0.pdf([-1, -1]))
         self.init_potential()
 
         self.randomise = noise_level > 0
@@ -38,14 +42,23 @@ class Field():
 
     def init_potential(self):
         self.get_potential = {'Gaussian2d': self.potential_gaussian,
-                              'Gaussian1d': self.potential_gaussian}[self.title]
+                              'Gaussian1d': self.potential_gaussian,
+                              'TwoTower': self.potential_2tower}[self.title]
 
     def potential_gaussian(self, locations):
+        noise = self.prepare_noise()
+        return self.landscape.pdf(locations) * self.norm_coeff + noise
+
+    def potential_2tower(self, locations):
+        noise = self.prepare_noise()
+        return self.landscape0.pdf(locations) + self.landscape1.pdf(locations) + noise
+
+    def prepare_noise(self):
         if self.randomise:
             noise = np.random.randn() * self.noise_level
         else:
             noise = 0
-        return self.landscape.pdf(locations) * self.norm_coeff + noise
+        return noise
 
 
 class AntInField():
