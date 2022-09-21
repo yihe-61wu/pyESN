@@ -9,13 +9,13 @@ def rotate(vector, angle):
     return np.array([v_new.real, v_new.imag])
 
 
-class field():
+class Field():
     def __init__(self, title, noise=0):
         self.title = title
         if self.title == 'Gaussian':
             self.landscape = multivariate_normal(mean=[0, 0], cov=[[2, -1], [1, 1]])
             self.norm_coeff = 1 / self.landscape.pdf([0, 0])
-            self.potential = self.potential_gaussian
+            self.get_potential = self.potential_gaussian
 
         self.randomise = noise > 0
         if self.randomise:
@@ -28,7 +28,7 @@ class field():
         xv, yv = np.meshgrid(x, y)
         xy = np.dstack((xv, yv))
 
-        plt.contourf(x, y, self.potential(xy))
+        plt.contourf(x, y, self.get_potential(xy))
         plt.axis('square')
         plot_title = "{} field - local noise level: {}".format(self.title, self.noise)
         plt.title(plot_title)
@@ -37,10 +37,30 @@ class field():
         return self.landscape.pdf(locations) * self.norm_coeff
 
 
+class AntInField():
+    def __init__(self, lifespan, method, intrinsic_rotation, intrinsic_stepsize, field, init_location, init_direction=None):
+        self.method = method
+        self.rotation, self.step_size = intrinsic_rotation, intrinsic_stepsize
 
-class ant():
-    def __init__(self):
-        pass
+        self.field = field
+        self.location = init_location
+        self.potential = self.field.get_potential(self.location)
+        if init_direction is None:
+            self.direction = rotate([1, 0], np.random.rand() * 2 * np.pi)
+        else:
+            self.direction = init_direction
+
+        self.lifespan = lifespan
+        self.age = 0
+        self.record = {}
+        for key, val in zip(('location', 'potential', 'direction'), (self.location, self.potential, self.direction)):
+            self.record[key] = np.full(self.lifespan, self.location)
+
+
+    def step_reverse(self):
+        old_loc = self.record_location[self.age - 1]
+        old_pot = self.record_potential[self.age - 1]
+        new_pot = self.field.get_potential(self.location)
 
 
 def ant_step(current_location, last_location, current_potential, last_potential, rotation=90, stepsize=0.1, method='reverse'):
@@ -69,42 +89,6 @@ def ant_step(current_location, last_location, current_potential, last_potential,
 
 
 if __name__ == "__main__":
-    from scipy.stats import multivariate_normal
-    import matplotlib.pyplot as plt
-
-    landscape = multivariate_normal(mean=[0, 0], cov=[[2, 0], [0, 1]])
-    x, y = np.mgrid[-3:3.01:.01, -3:3.01:.01]
-    pos = np.dstack((x, y))
-
-    x0 = np.random.randint(2) * 5 - 2.5
-    y0 = np.random.rand() * 5 - 2.5
-    init_offset = np.random.rand(2) * .2 - .1
-    x1, y1 = x0 + init_offset[0], y0 + init_offset[1]
-
-    duration = 200
-    xt, yt = np.zeros(duration), np.zeros(duration)
-    degree = np.pi / 4
-    pt = np.zeros(duration)
-    for t in range(duration):
-        xt[t], yt[t] = x1, y1
-        p0, p1 = [landscape.pdf(xy) + np.random.randn() / 1000 for xy in ([x0, y0], [x1, y1])]
-        #p0, p1 = y0, y1
-        s, flip = ant_step([x1, y1], [x0, y0], p1, p0, rotation=degree)
-        if flip:
-            degree *= -1
-            print('change')
-
-        x0, y0 = x1, y1
-        x1 += s[0]
-        y1 += s[1]
-
-        pt[t] = p1
-
-
-    print(xt[0], yt[0])
-    plt.contourf(x, y, landscape.pdf(pos))
-    plt.plot(xt, yt, c='r')
-    plt.axis('square')
-    plt.figure()
-    plt.plot(pt)
+    landscape = Field('Gaussian')
+    landscape.plot_field()
     plt.show()
