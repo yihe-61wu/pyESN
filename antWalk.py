@@ -108,7 +108,9 @@ class AntInField():
 
     def step_turn(self):
         ispotincrease = self.potential >= self.record['potential'][self.age - 1]
-        self.direction = rotate(self.direction, (int(ispotincrease) * 2 - 1) * self.rotation)
+        if not ispotincrease:
+            self.rotation *= -1
+        self.direction = rotate(self.direction, self.rotation)
         self.location += self.direction * self.step_size
         self.potential = self.field.get_potential(self.location)
         self.update_record()
