@@ -40,6 +40,7 @@ class Field():
 class AntInField():
     def __init__(self, lifespan, method, intrinsic_rotation, intrinsic_stepsize, field, init_location, init_direction=None):
         self.method = method
+        self.step = {'reverse': self.step_reverse}[self.method]
         self.rotation, self.step_size = intrinsic_rotation, intrinsic_stepsize
 
         self.field = field
@@ -60,33 +61,38 @@ class AntInField():
 
     def plot_step_arrow(self, epoch, length=0.1):
         plt.arrow(*self.record['location'][epoch], *self.record['direction'][epoch] * length,
-                  head_width=0.1, head_length=0.1, fc='r', ec='r')
+                  head_width=0.01, head_length=0.01, fc='r', ec='r')
 
     def update_record(self):
         self.age += 1
-        for key, val in zip(self.record_list, (self.location, self.direction, self.potential)):
-            self.record[key][self.age] = val
-
         if self.age >= self.lifespan:
             print('end of life')
+        else:
+            for key, val in zip(self.record_list, (self.location, self.direction, self.potential)):
+                self.record[key][self.age] = val
 
     def step_reverse(self):
-        old_loc, old_dir, old_pot = [self.record[key][self.age - 1] for key in self.record_list]
-        isincrease = self.potential >= old_pot
-        self.direction = rotate((int(isincrease) * 2 - 1) * old_dir, self.rotation)
+        ispotincrease = self.potential >= self.record['potential'][self.age - 1]
+        self.direction = rotate((int(ispotincrease) * 2 - 1) * self.direction, self.rotation)
         self.location += self.direction * self.step_size
         self.potential = self.field.get_potential(self.location)
         self.update_record()
 
-
+    def walk(self):
+        for _ in range(self.lifespan):
+            self.step()
 
 
 if __name__ == "__main__":
     landscape = Field('Gaussian')
-    ant = AntInField(10, 'reverse', np.pi/6, 0.01, landscape, [1, 1])
-    ant.step_reverse()
+    duration = 30
+    ant = AntInField(duration, 'reverse', np.pi/np.e/3, 0.1, landscape, [1.0, 1.0])
+    ant.walk()
     print(ant.record)
 
     landscape.plot_field()
-    ant.plot_step_arrow(0, 0.5)
+    #for t in range(duration):
+      #  ant.plot_step_arrow(t, 0.01)
+
+    plt.plot(*ant.record['location'].T, c='r')
     plt.show()
