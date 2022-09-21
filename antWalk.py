@@ -12,10 +12,13 @@ def rotate(vector, angle):
 class Field():
     def __init__(self, title, noise_level=0):
         self.title = title
-        if self.title == 'Gaussian':
+        if self.title == 'Gaussian2d':
             self.landscape = multivariate_normal(mean=[0, 0], cov=[[2, -1], [1, 1]])
             self.norm_coeff = 1 / self.landscape.pdf([0, 0])
-            self.get_potential = self.potential_gaussian
+        elif self.title == 'Gaussian1d':
+            self.landscape = multivariate_normal(mean=[0, 0], cov=[[2000, 0], [0, 1]])
+            self.norm_coeff = 1 / self.landscape.pdf([0, 0])
+        self.init_potential()
 
         self.randomise = noise_level > 0
         if self.randomise:
@@ -32,6 +35,10 @@ class Field():
         plt.axis('square')
         plot_title = "{} field - local noise level: {}".format(self.title, self.noise_level)
         plt.title(plot_title)
+
+    def init_potential(self):
+        self.get_potential = {'Gaussian2d': self.potential_gaussian,
+                              'Gaussian1d': self.potential_gaussian}[self.title]
 
     def potential_gaussian(self, locations):
         if self.randomise:
@@ -110,8 +117,9 @@ if __name__ == "__main__":
         angle = np.random.rand() * 2 * np.pi
         return rotate([distance, 0], angle)
 
+    field_type = 'Gaussian1d'
+    landscape = Field(field_type, noise_level=0)
 
-    landscape = Field('Gaussian', noise_level=0)
     duration = 50
     ant = AntInField(duration, 'reverse', np.pi/np.e/3, 0.1, landscape, random_start())
     ant.walk()
