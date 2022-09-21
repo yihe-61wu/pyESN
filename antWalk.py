@@ -55,6 +55,9 @@ class AntInField():
                      'turn': self.step_turn}[self.method]
         self.rotation, self.step_size = intrinsic_rotation, intrinsic_stepsize
 
+        self.potential_decrease_count = 0
+        self.potential_decrease_upper_limit = 2 * np.pi // self.rotation
+
         self.field = field
         self.location = init_location
         self.potential = self.field.get_potential(self.location)
@@ -110,10 +113,17 @@ class AntInField():
         ispotincrease = self.potential >= self.record['potential'][self.age - 1]
         if not ispotincrease:
             self.rotation *= -1
-        self.direction = rotate(self.direction, self.rotation)
-        self.location += self.direction * self.step_size
-        self.potential = self.field.get_potential(self.location)
-        self.update_record()
+            self.potential_decrease_count +=1
+        else:
+            self.potential_decrease_count = 0
+        if self.potential_decrease_count <= self.potential_decrease_upper_limit:
+            self.direction = rotate(self.direction, self.rotation)
+            self.location += self.direction * self.step_size
+            self.potential = self.field.get_potential(self.location)
+            self.update_record()
+        else:
+            self.step_reverse()
+            self.potential_decrease_count = 0
 
     def walk(self):
         for _ in range(self.lifespan):
@@ -127,11 +137,11 @@ if __name__ == "__main__":
         angle = np.random.rand() * 2 * np.pi
         return rotate([distance, 0], angle)
 
-    field_type = 'Gaussian1d'
+    field_type = 'Gaussian2d'
     landscape = Field(field_type, noise_level=0)
 
-    duration = 50
-    ant = AntInField(duration, 'turn', np.pi/np.e/3, 0.1, landscape, random_start())
+    duration = 200
+    ant = AntInField(duration, 'turn', np.pi/np.e/3, 0.02, landscape, random_start())
     ant.walk()
 
     plt.figure()
