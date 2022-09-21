@@ -140,7 +140,9 @@ class AntInField():
             self.potential_decrease_count = 0
 
     def step_random(self):
-        self.direction = rotate(self.direction, np.random.rand() * 2 * np.pi)
+        ispotincrease = self.potential >= self.record['potential'][self.age - 1]
+        if not ispotincrease:
+            self.direction = rotate(self.direction, np.random.rand() * 2 * np.pi)
         self.location += self.direction * self.step_size
         self.potential = self.field.get_potential(self.location)
         self.update_record()
@@ -161,7 +163,7 @@ if __name__ == "__main__":
     landscape = Field(field_type, noise_level=0)
 
     duration = 1000
-    tactic = 'random'  # reverse, turn, random  ### reverse >faster> turn
+    tactic = 'reverse'  # reverse, turn, random  ### convergence speed: reverse ~> random > turn
     rotation_angle = np.pi/np.e/3 #0.00001
     ant = AntInField(duration, tactic, rotation_angle, 0.02, landscape, random_start())
     ant.walk()
