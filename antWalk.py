@@ -69,9 +69,7 @@ class Field():
 class AntInField():
     def __init__(self, lifespan, method, intrinsic_rotation, intrinsic_stepsize, field, init_location, init_direction=None):
         self.method = method
-        self.step = {'reverse': self.step_reverse,
-                     'turn': self.step_turn,
-                     'random': self.step_random}[self.method]
+        self.init_step()
         self.rotation, self.step_size = intrinsic_rotation, intrinsic_stepsize
 
         self.potential_decrease_count = 0
@@ -121,15 +119,22 @@ class AntInField():
             for key, val in zip(self.record_list, (self.location, self.direction, self.potential)):
                 self.record[key][self.age] = val
 
-    def step_reverse(self):
-        ispotincrease = self.potential >= self.record['potential'][self.age - 1]
-        self.direction = rotate((int(ispotincrease) * 2 - 1) * self.direction, self.rotation)
+    def init_step(self):
+        self.step_method = {'reverse': self.step_reverse,
+                     'turn': self.step_turn,
+                     'random': self.step_random}[self.method]
+
+    def step(self):
+        potential_increased = self.potential >= self.record['potential'][self.age - 1]
+        self.step_method(potential_increased)
         self.location += self.direction * self.step_size
         self.potential = self.field.measure_potential(self.location)
         self.update_record()
 
-    def step_turn(self):
-        ispotincrease = self.potential >= self.record['potential'][self.age - 1]
+    def step_reverse(self, ispotincrease):
+        self.direction = rotate((int(ispotincrease) * 2 - 1) * self.direction, self.rotation)
+
+    def step_turn(self, ispotincrease):
         if not ispotincrease:
             self.rotation *= -1
             self.potential_decrease_count +=1
@@ -137,20 +142,13 @@ class AntInField():
             self.potential_decrease_count = 0
         if self.potential_decrease_count <= self.potential_decrease_upper_limit:
             self.direction = rotate(self.direction, self.rotation)
-            self.location += self.direction * self.step_size
-            self.potential = self.field.measure_potential(self.location)
-            self.update_record()
         else:
-            self.step_reverse()
+            self.step_reverse(False)
             self.potential_decrease_count = 0
 
-    def step_random(self):
-        ispotincrease = self.potential >= self.record['potential'][self.age - 1]
+    def step_random(self, ispotincrease):
         if not ispotincrease:
             self.direction = rotate(self.direction, np.random.rand() * 2 * np.pi)
-        self.location += self.direction * self.step_size
-        self.potential = self.field.measure_potential(self.location)
-        self.update_record()
 
     def walk(self):
         for _ in range(self.lifespan):
@@ -168,7 +166,7 @@ if __name__ == "__main__":
     landscape = Field(field_type, noise_level=0.001)
 
     duration = 1000
-    tactic = 'reverse'  # reverse, turn, random  ### convergence speed: reverse ~> random > turn
+    tactic = 'random'  # reverse, turn, random  ### convergence speed: reverse ~> random > turn
     rotation_angle = np.pi/np.e/3 #0.00001
     ant = AntInField(duration, tactic, rotation_angle, 0.02, landscape, random_start())
     ant.walk()
