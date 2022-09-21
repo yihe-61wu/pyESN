@@ -61,10 +61,11 @@ class AntInField():
 
     def plot_step_arrow(self, epoch, length=0.1):
         plt.arrow(*self.record['location'][epoch], *self.record['direction'][epoch] * length,
-                  head_width=0.01, head_length=0.01, fc='r', ec='r', alpha=0.5)
+                  head_width=0.01, head_length=0.01, fc='r', ec='r', alpha=0.3)
 
     def plot_trajectory(self, plot_arrows=False):
         plt.plot(*self.record['location'].T, c='r')
+        plt.scatter(*self.record['location'][0], s=80, facecolors='none', edgecolors='r')
         if plot_arrows:
             duration = self.lifespan
             length = 0.1
@@ -75,6 +76,8 @@ class AntInField():
         for epoch in range(duration):
             self.plot_step_arrow(epoch, length)
 
+    def plot_potentials(self):
+        plt.plot(self.record['potential'])
 
     def update_record(self):
         self.age += 1
@@ -97,11 +100,23 @@ class AntInField():
 
 
 if __name__ == "__main__":
+    def random_start(distance_range_from_origin=[2, 2.5]):
+        low, high = distance_range_from_origin
+        distance = np.random.rand() * (high - low) + low
+        angle = np.random.rand() * 2 * np.pi
+        return rotate([distance, 0], angle)
+
+
     landscape = Field('Gaussian')
-    duration = 30
-    ant = AntInField(duration, 'reverse', np.pi/np.e/3, 0.1, landscape, [1.0, 1.0])
+    duration = 50
+    ant = AntInField(duration, 'reverse', np.pi/np.e/3, 0.1, landscape, random_start())
     ant.walk()
 
+    plt.figure()
     landscape.plot_field()
     ant.plot_trajectory(True)
+
+    plt.figure()
+    ant.plot_potentials()
+    plt.grid()
     plt.show()
