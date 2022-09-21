@@ -51,7 +51,8 @@ class Field():
 class AntInField():
     def __init__(self, lifespan, method, intrinsic_rotation, intrinsic_stepsize, field, init_location, init_direction=None):
         self.method = method
-        self.step = {'reverse': self.step_reverse}[self.method]
+        self.step = {'reverse': self.step_reverse,
+                     'turn': self.step_turn}[self.method]
         self.rotation, self.step_size = intrinsic_rotation, intrinsic_stepsize
 
         self.field = field
@@ -105,6 +106,13 @@ class AntInField():
         self.potential = self.field.get_potential(self.location)
         self.update_record()
 
+    def step_turn(self):
+        ispotincrease = self.potential >= self.record['potential'][self.age - 1]
+        self.direction = rotate(self.direction, (int(ispotincrease) * 2 - 1) * self.rotation)
+        self.location += self.direction * self.step_size
+        self.potential = self.field.get_potential(self.location)
+        self.update_record()
+
     def walk(self):
         for _ in range(self.lifespan):
             self.step()
@@ -121,7 +129,7 @@ if __name__ == "__main__":
     landscape = Field(field_type, noise_level=0)
 
     duration = 50
-    ant = AntInField(duration, 'reverse', np.pi/np.e/3, 0.1, landscape, random_start())
+    ant = AntInField(duration, 'turn', np.pi/np.e/3, 0.1, landscape, random_start())
     ant.walk()
 
     plt.figure()
