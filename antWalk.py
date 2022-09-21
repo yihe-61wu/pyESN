@@ -53,9 +53,13 @@ class AntInField():
         self.lifespan = lifespan
         self.age = 0
         self.record = {}
-        for key, val in zip(('location', 'potential', 'direction'), (self.location, self.potential, self.direction)):
-            self.record[key] = np.full(self.lifespan, self.location)
+        for key, val in zip(('location', 'direction'), (self.location, self.direction)):
+            self.record[key] = np.full((self.lifespan, 2), val)
+        self.record['potential'] = np.full(self.lifespan, self.potential)
 
+    def plot_step_arrow(self, epoch, length=0.1):
+        plt.arrow(*self.record['location'][epoch], *self.record['direction'][epoch] * length,
+                  head_width=0.1, head_length=0.1, fc='r', ec='r')
 
     def step_reverse(self):
         old_loc = self.record_location[self.age - 1]
@@ -63,32 +67,13 @@ class AntInField():
         new_pot = self.field.get_potential(self.location)
 
 
-def ant_step(current_location, last_location, current_potential, last_potential, rotation=90, stepsize=0.1, method='reverse'):
-    xy_curr, xy_last, p_curr, p_last = [np.array(arg) for arg in (current_location, last_location, current_potential, last_potential)]
-
-    dxy_last = xy_curr - xy_last
-    direction_last = dxy_last / np.linalg.norm(dxy_last)
-
-    dp_last = p_curr - p_last
-
-    if method == 'reverse':
-        goahead = int(dp_last > 0) * 2 - 1
-        new_direction = rotate(goahead * direction_last, rotation)
-
-    elif method == 'switch':
-        if dp_last > 0:
-            new_direction = rotate(direction_last, rotation)
-        else:
-            new_direction = rotate(direction_last, -rotation)
-
-
-
-
-
-    return new_direction * stepsize, dp_last < 0
 
 
 if __name__ == "__main__":
     landscape = Field('Gaussian')
+    ant = AntInField(10, 'reverse', np.pi/6, 0.01, landscape, [1, 1])
+    print(ant.record)
+
     landscape.plot_field()
+    ant.plot_step_arrow(0, 0.5)
     plt.show()
