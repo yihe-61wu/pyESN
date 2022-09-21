@@ -19,9 +19,9 @@ class Field():
             self.landscape = multivariate_normal(mean=[0, 0], cov=[[2000, 0], [0, 1]])
             self.norm_coeff = 1 / self.landscape.pdf([0, 0])
         elif self.title == 'TwoTower':
-            self.landscape0 = multivariate_normal(mean=[1, 0], cov=[[2, -1], [1, 1]])
-            self.landscape1 = multivariate_normal(mean=[-1, -1], cov=[[1, -1], [2, 3]])
-            self.norm_coeff = 1 / (self.landscape0.pdf([1, 0]) + self.landscape0.pdf([-1, -1]))
+            self.landscape0 = multivariate_normal(mean=[2, 1], cov=[[2, -1], [1, 1]])
+            self.landscape1 = multivariate_normal(mean=[-1, -1], cov=[[1, 1], [-1, 3]])
+            self.norm_coeff = 1 / 0.1591573565482721  # empirically found, only work for above landscapes
         self.init_potential()
 
         self.randomise = noise_level > 0
@@ -46,14 +46,14 @@ class Field():
                               'TwoTower': self.potential_2tower}[self.title]
 
     def potential_gaussian(self, locations):
-        noise = self.prepare_noise()
+        noise = self._prepare_noise()
         return self.landscape.pdf(locations) * self.norm_coeff + noise
 
     def potential_2tower(self, locations):
-        noise = self.prepare_noise()
-        return self.landscape0.pdf(locations) + self.landscape1.pdf(locations) + noise
+        noise = self._prepare_noise()
+        return (self.landscape0.pdf(locations) + self.landscape1.pdf(locations)) * self.norm_coeff + noise
 
-    def prepare_noise(self):
+    def _prepare_noise(self):
         if self.randomise:
             noise = np.random.randn() * self.noise_level
         else:
@@ -65,7 +65,8 @@ class AntInField():
     def __init__(self, lifespan, method, intrinsic_rotation, intrinsic_stepsize, field, init_location, init_direction=None):
         self.method = method
         self.step = {'reverse': self.step_reverse,
-                     'turn': self.step_turn}[self.method]
+                     'turn': self.step_turn,
+                     'random': self.step_random}[self.method]
         self.rotation, self.step_size = intrinsic_rotation, intrinsic_stepsize
 
         self.potential_decrease_count = 0
@@ -138,6 +139,12 @@ class AntInField():
             self.step_reverse()
             self.potential_decrease_count = 0
 
+    def step_random(self):
+        self.direction = rotate(self.direction, np.random.rand() * 2 * np.pi)
+        self.location += self.direction * self.step_size
+        self.potential = self.field.get_potential(self.location)
+        self.update_record()
+
     def walk(self):
         for _ in range(self.lifespan):
             self.step()
@@ -150,11 +157,13 @@ if __name__ == "__main__":
         angle = np.random.rand() * 2 * np.pi
         return rotate([distance, 0], angle)
 
-    field_type = 'Gaussian2d'
+    field_type = 'Gaussian2d'  # Gaussian1d, Gaussian2d, TwoTower
     landscape = Field(field_type, noise_level=0)
 
-    duration = 200
-    ant = AntInField(duration, 'turn', np.pi/np.e/3, 0.02, landscape, random_start())
+    duration = 1000
+    tactic = 'random'  # reverse, turn, random  ### reverse >faster> turn
+    rotation_angle = np.pi/np.e/3 #0.00001
+    ant = AntInField(duration, tactic, rotation_angle, 0.02, landscape, random_start())
     ant.walk()
 
     plt.figure()
