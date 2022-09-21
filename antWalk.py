@@ -45,13 +45,18 @@ class Field():
                               'Gaussian1d': self.potential_gaussian,
                               'TwoTower': self.potential_2tower}[self.title]
 
+    def measure_potential(self, locations):
+        if self.randomise:
+            noise = np.random.randn() * self.noise_level
+        else:
+            noise = 0
+        return self.get_potential(locations) + noise
+
     def potential_gaussian(self, locations):
-        noise = self._prepare_noise()
-        return self.landscape.pdf(locations) * self.norm_coeff + noise
+        return self.landscape.pdf(locations) * self.norm_coeff
 
     def potential_2tower(self, locations):
-        noise = self._prepare_noise()
-        return (self.landscape0.pdf(locations) + self.landscape1.pdf(locations)) * self.norm_coeff + noise
+        return (self.landscape0.pdf(locations) + self.landscape1.pdf(locations)) * self.norm_coeff
 
     def _prepare_noise(self):
         if self.randomise:
@@ -74,7 +79,7 @@ class AntInField():
 
         self.field = field
         self.location = init_location
-        self.potential = self.field.get_potential(self.location)
+        self.potential = self.field.measure_potential(self.location)
         if init_direction is None:
             self.direction = rotate([1, 0], np.random.rand() * 2 * np.pi)
         else:
@@ -120,7 +125,7 @@ class AntInField():
         ispotincrease = self.potential >= self.record['potential'][self.age - 1]
         self.direction = rotate((int(ispotincrease) * 2 - 1) * self.direction, self.rotation)
         self.location += self.direction * self.step_size
-        self.potential = self.field.get_potential(self.location)
+        self.potential = self.field.measure_potential(self.location)
         self.update_record()
 
     def step_turn(self):
@@ -133,7 +138,7 @@ class AntInField():
         if self.potential_decrease_count <= self.potential_decrease_upper_limit:
             self.direction = rotate(self.direction, self.rotation)
             self.location += self.direction * self.step_size
-            self.potential = self.field.get_potential(self.location)
+            self.potential = self.field.measure_potential(self.location)
             self.update_record()
         else:
             self.step_reverse()
@@ -144,7 +149,7 @@ class AntInField():
         if not ispotincrease:
             self.direction = rotate(self.direction, np.random.rand() * 2 * np.pi)
         self.location += self.direction * self.step_size
-        self.potential = self.field.get_potential(self.location)
+        self.potential = self.field.measure_potential(self.location)
         self.update_record()
 
     def walk(self):
@@ -160,7 +165,7 @@ if __name__ == "__main__":
         return rotate([distance, 0], angle)
 
     field_type = 'Gaussian2d'  # Gaussian1d, Gaussian2d, TwoTower
-    landscape = Field(field_type, noise_level=0)
+    landscape = Field(field_type, noise_level=0.001)
 
     duration = 1000
     tactic = 'reverse'  # reverse, turn, random  ### convergence speed: reverse ~> random > turn
