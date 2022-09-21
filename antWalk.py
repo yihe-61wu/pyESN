@@ -53,7 +53,8 @@ class AntInField():
         self.lifespan = lifespan
         self.age = 0
         self.record = {}
-        for key, val in zip(('location', 'direction'), (self.location, self.direction)):
+        self.record_list = 'location', 'direction', 'potential'
+        for key, val in zip(self.record_list[:2], (self.location, self.direction)):
             self.record[key] = np.full((self.lifespan, 2), val)
         self.record['potential'] = np.full(self.lifespan, self.potential)
 
@@ -61,10 +62,21 @@ class AntInField():
         plt.arrow(*self.record['location'][epoch], *self.record['direction'][epoch] * length,
                   head_width=0.1, head_length=0.1, fc='r', ec='r')
 
+    def update_record(self):
+        self.age += 1
+        for key, val in zip(self.record_list, (self.location, self.direction, self.potential)):
+            self.record[key][self.age] = val
+
+        if self.age >= self.lifespan:
+            print('end of life')
+
     def step_reverse(self):
-        old_loc = self.record_location[self.age - 1]
-        old_pot = self.record_potential[self.age - 1]
-        new_pot = self.field.get_potential(self.location)
+        old_loc, old_dir, old_pot = [self.record[key][self.age - 1] for key in self.record_list]
+        isincrease = self.potential >= old_pot
+        self.direction = rotate((int(isincrease) * 2 - 1) * old_dir, self.rotation)
+        self.location += self.direction * self.step_size
+        self.potential = self.field.get_potential(self.location)
+        self.update_record()
 
 
 
@@ -72,6 +84,7 @@ class AntInField():
 if __name__ == "__main__":
     landscape = Field('Gaussian')
     ant = AntInField(10, 'reverse', np.pi/6, 0.01, landscape, [1, 1])
+    ant.step_reverse()
     print(ant.record)
 
     landscape.plot_field()
