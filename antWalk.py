@@ -61,7 +61,20 @@ class AntInField():
 
     def plot_step_arrow(self, epoch, length=0.1):
         plt.arrow(*self.record['location'][epoch], *self.record['direction'][epoch] * length,
-                  head_width=0.01, head_length=0.01, fc='r', ec='r')
+                  head_width=0.01, head_length=0.01, fc='r', ec='r', alpha=0.5)
+
+    def plot_trajectory(self, plot_arrows=False):
+        plt.plot(*self.record['location'].T, c='r')
+        if plot_arrows:
+            duration = self.lifespan
+            length = 0.1
+        else:
+            duration = 1
+            length = 0.3
+
+        for epoch in range(duration):
+            self.plot_step_arrow(epoch, length)
+
 
     def update_record(self):
         self.age += 1
@@ -88,11 +101,7 @@ if __name__ == "__main__":
     duration = 30
     ant = AntInField(duration, 'reverse', np.pi/np.e/3, 0.1, landscape, [1.0, 1.0])
     ant.walk()
-    print(ant.record)
 
     landscape.plot_field()
-    #for t in range(duration):
-      #  ant.plot_step_arrow(t, 0.01)
-
-    plt.plot(*ant.record['location'].T, c='r')
+    ant.plot_trajectory(True)
     plt.show()
